@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>A Sweet Question</title>
   <style>
+    /* Embedding CSS directly */
     body {
       font-family: 'Comic Sans MS', 'Chalkboard SE', cursive;
       margin: 0;
@@ -18,7 +20,7 @@
       overflow: hidden;
       transition: background 0.5s ease;
     }
-    
+
     .container {
       text-align: center;
       padding: 2rem;
@@ -26,22 +28,27 @@
       background-color: rgba(255, 255, 255, 0.7);
       box-shadow: 0 0.5rem 1rem rgba(255, 192, 203, 0.3);
       max-width: 90%;
+      position: relative;
+      z-index: 10;
     }
-    
+
     h1 {
       color: #ff6699;
       font-size: 2.5rem;
       margin-bottom: 2rem;
       text-shadow: 0.1rem 0.1rem 0.2rem rgba(255, 153, 204, 0.5);
     }
-    
+
     .buttons {
       display: flex;
       gap: 2rem;
+      /* Only affects YES button spacing if others added here */
       justify-content: center;
       margin-top: 2rem;
+      position: relative;
+      /* Needed for absolute positioning context */
     }
-    
+
     button {
       padding: 0.8rem 2rem;
       font-size: 1.2rem;
@@ -50,47 +57,92 @@
       cursor: pointer;
       font-family: inherit;
       transition: all 0.3s ease;
+      /* Default transition */
       box-shadow: 0 0.3rem 0.5rem rgba(0, 0, 0, 0.1);
     }
-    
+
     #yesBtn {
       background-color: #ff80ab;
       color: white;
       transform-origin: center;
+      z-index: 11;
+      /* Ensure YES is above NO if they overlap slightly */
     }
-    
+
     #yesBtn:hover {
       background-color: #ff4081;
       transform: scale(1.1);
+      /* Keep original YES hover */
     }
-    
+
     #noBtn {
       background-color: #b3b3b3;
       color: white;
+      position: absolute;
+      /* Positioned relative to nearest positioned ancestor (body) */
+      /* Update transition: only include properties that change */
+      transition: transform 0.3s ease, background-color 0.3s ease, top 0.3s ease-out, left 0.3s ease-out;
+      z-index: 10;
+      /* Below YES button */
     }
-    
+
     #noBtn:hover {
+      /* Keep a basic hover effect, but don't move it */
       background-color: #999999;
+      /* Optional: slight scale up on hover */
+      /* transform: scale(1.05); */
     }
-    
+
+    /* Add Shake Animation */
+    @keyframes shake {
+
+      0%,
+      100% {
+        transform: translateX(0) rotate(0) scale(var(--current-scale, 1));
+      }
+
+      /* Maintain scale */
+      10%,
+      30%,
+      50%,
+      70%,
+      90% {
+        transform: translateX(-5px) rotate(-3deg) scale(var(--current-scale, 1));
+      }
+
+      20%,
+      40%,
+      60%,
+      80% {
+        transform: translateX(5px) rotate(3deg) scale(var(--current-scale, 1));
+      }
+    }
+
+    .shake-it {
+      /* Apply current scale via CSS variable during animation */
+      animation: shake 0.4s ease-in-out;
+    }
+
     .heart {
       position: absolute;
       font-size: 1.5rem;
       animation: float 4s infinite;
       opacity: 0;
+      z-index: 1;
     }
-    
+
     @keyframes float {
       0% {
         transform: translateY(0) translateX(0) rotate(0deg);
         opacity: 1;
       }
+
       100% {
         transform: translateY(-100vh) translateX(20px) rotate(360deg);
         opacity: 0;
       }
     }
-    
+
     .result-image {
       max-width: 90%;
       max-height: 70vh;
@@ -99,7 +151,7 @@
       box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.2);
       margin-top: 2rem;
     }
-    
+
     .result-text {
       margin-top: 1rem;
       color: #ff4081;
@@ -108,89 +160,159 @@
     }
   </style>
 </head>
+
 <body>
   <div class="container" id="questionContainer">
     <h1>Can I be your boyfriend?</h1>
     <div class="buttons">
       <button id="yesBtn">YES</button>
-      <button id="noBtn">NO</button>
+      <!-- NO button is positioned absolutely, no longer needs to be inside .buttons -->
     </div>
   </div>
-  
+
+  <!-- NO button placed directly in body for absolute positioning relative to viewport -->
+  <button id="noBtn">NO</button>
+
   <img src="tT8Lqff.png" alt="Ghibli style couple with cat" class="result-image" id="coupleImage">
   <p class="result-text" id="thankYouText">Thank you for saying yes! 💖</p>
-  
+
   <script>
+    // Embedding JavaScript directly
     const yesBtn = document.getElementById('yesBtn');
     const noBtn = document.getElementById('noBtn');
     const questionContainer = document.getElementById('questionContainer');
     const coupleImage = document.getElementById('coupleImage');
     const thankYouText = document.getElementById('thankYouText');
-    
+    const body = document.body; // Get body for positioning context if needed
     let noClickCount = 0;
-    const maxNoClicks = 5;
-    
+    const noMessages = [
+      "NO", // Initial
+      "Are you sure?",
+      "Really sure?",
+      "Please don't :(",
+      "Think again!",
+      "Pretty please?",
+      "Okay fine... maybe?", // Getting desperate
+      "Last chance!"
+    ];
+    const maxNoClicks = noMessages.length; // Button disappears after the last message
+    // Function to move the NO button to a random position
+    function moveButtonRandomly(button) {
+      // Use viewport dimensions for positioning
+      const windowWidth = window.innerWidth;
+      const windowHeight = window.innerHeight;
+      const buttonWidth = button.offsetWidth;
+      const buttonHeight = button.offsetHeight;
+      // Calculate safe area, leaving some padding from edges
+      const maxX = windowWidth - buttonWidth - 20;
+      const maxY = windowHeight - buttonHeight - 20;
+      // Generate random position within safe bounds
+      const newX = Math.max(20, Math.floor(Math.random() * maxX));
+      const newY = Math.max(20, Math.floor(Math.random() * maxY));
+      // Apply new position
+      button.style.left = newX + 'px';
+      button.style.top = newY + 'px';
+    }
+    // Set initial position for NO button near YES
+    function setInitialNoButtonPosition() {
+      // Ensure layout is calculated before getting rects
+      requestAnimationFrame(() => {
+        if (!yesBtn || !noBtn) return; // Safety check if elements aren't ready
+        const yesBtnRect = yesBtn.getBoundingClientRect();
+        // Position relative to the viewport initially
+        // Place it a bit further to avoid accidental overlap on different screens
+        const initialX = yesBtnRect.right + 30; // 30px right of YES
+        const initialY = yesBtnRect.top; // Align top with YES
+        // Prevent initial position from being off-screen
+        const windowWidth = window.innerWidth;
+        const noBtnWidth = noBtn.offsetWidth || 100; // Estimate width if not rendered yet
+        noBtn.style.left = Math.min(initialX, windowWidth - noBtnWidth - 20) + 'px'; // Don't go off right edge
+        noBtn.style.top = initialY + 'px';
+        noBtn.style.pointerEvents = 'auto'; // Ensure it's clickable
+        noBtn.style.transform = 'scale(1)'; // Reset scale explicitly
+        noBtn.style.setProperty('--current-scale', 1); // Reset CSS variable for shake
+      });
+    }
+    // Position the NO button initially
+    window.addEventListener('load', setInitialNoButtonPosition);
+    window.addEventListener('resize', setInitialNoButtonPosition); // Reposition on resize
     // Create hearts randomly
     function createHeart() {
       const heart = document.createElement('div');
       heart.classList.add('heart');
-      heart.innerHTML = '💕';
+      heart.innerHTML = ['💕', '💖', '💗', '💓', '💞'][Math.floor(Math.random() * 5)]; // Variety of hearts
       heart.style.left = Math.random() * 100 + 'vw';
-      heart.style.animationDuration = (Math.random() * 3 + 3) + 's';
+      heart.style.fontSize = (Math.random() * 1 + 1) + 'rem'; // Random size
+      heart.style.animationDuration = (Math.random() * 3 + 3) + 's'; // Random speed
       document.body.appendChild(heart);
-      
       setTimeout(() => {
         heart.remove();
-      }, 6000);
+      }, 6000); // Remove after animation finishes
     }
-    
-    // Start creating hearts every second
-    setInterval(createHeart, 1000);
-    
+    // Start creating hearts
+    setInterval(createHeart, 800); // Slightly less frequent
+    // --- NO Button Logic ---
+    // REMOVED: noBtn.addEventListener('mouseenter', ...) logic
+    // Handle NO button clicks
+    noBtn.addEventListener('click', () => {
+      noClickCount++;
+      // 1. Begging for Mercy: Change text
+      const messageIndex = Math.min(noClickCount, noMessages.length - 1);
+      noBtn.textContent = noMessages[messageIndex];
+      // 2. Shrinking Escape: Make button smaller
+      const shrinkFactor = 1 - (noClickCount * 0.08); // Shrink by 8% each time
+      const scaleValue = Math.max(0.3, shrinkFactor); // Don't let it disappear completely via scale yet
+      noBtn.style.transform = `scale(${scaleValue})`;
+      // Update CSS variable for shake animation to respect current scale
+      noBtn.style.setProperty('--current-scale', scaleValue);
+      // 3. Shaky Panic: Add shake animation class
+      // Remove first if it exists (e.g., rapid clicks) then add
+      noBtn.classList.remove('shake-it');
+      // Force reflow/repaint might be needed for rapid clicks, but usually not
+      // void noBtn.offsetWidth;
+      noBtn.classList.add('shake-it');
+      // Remove the class after the animation finishes
+      setTimeout(() => {
+        // Check if button still exists before trying to remove class
+        if (noBtn) {
+          noBtn.classList.remove('shake-it');
+        }
+      }, 400); // Match CSS animation duration
+      // 4. Teleportation: Move immediately after click
+      moveButtonRandomly(noBtn);
+      // 5. Make YES button bigger (more enticing!)
+      const yesScaleFactor = 1 + (noClickCount * 0.25); // Grows faster
+      // Prevent YES button getting excessively huge
+      yesBtn.style.transform = `scale(${Math.min(yesScaleFactor, 3)})`;
+      // 6. Hide NO button definitively after max clicks reached
+      if (noClickCount >= noMessages.length) { // Use length for comparison now
+        noBtn.style.display = 'none';
+        // Optional: Make YES button maximum size now
+        yesBtn.style.transform = `scale(3)`; // Max size defined above
+      }
+      // Create a few hearts on each NO click for visual feedback
+      for (let i = 0; i < 2; i++) {
+        setTimeout(createHeart, i * 150);
+      }
+    });
+    // --- YES Button Logic ---
     yesBtn.addEventListener('click', () => {
-      // Hide question container
+      // Hide question container and NO button container/button
       questionContainer.style.display = 'none';
-      
+      if (noBtn) noBtn.style.display = 'none'; // Ensure NO button is hidden
       // Show result image and text
       coupleImage.style.display = 'block';
       thankYouText.style.display = 'block';
-      
       // Change background to a more celebratory gradient
       document.body.style.background = 'linear-gradient(135deg, #ffb6c1, #ffc0cb, #ffccd5)';
-      
       // Create many hearts for celebration
-      for (let i = 0; i < 20; i++) {
-        setTimeout(createHeart, i * 100);
+      for (let i = 0; i < 30; i++) { // More hearts on YES!
+        setTimeout(createHeart, i * 50); // Faster burst
       }
     });
-    
-    noBtn.addEventListener('click', () => {
-      noClickCount++;
-      
-      // Each time NO is clicked, make YES button bigger
-      const newSize = 1 + (noClickCount * 0.3);
-      yesBtn.style.transform = `scale(${newSize})`;
-      yesBtn.style.fontSize = `${1.2 * newSize}rem`;
-      yesBtn.style.padding = `${0.8 * newSize}rem ${2 * newSize}rem`;
-      
-      // Make NO button smaller and move it randomly
-      noBtn.style.transform = `scale(${1 - (noClickCount * 0.15)})`;
-      const randomX = Math.random() * 300 - 150;
-      const randomY = Math.random() * 300 - 150;
-      noBtn.style.position = 'relative';
-      noBtn.style.left = `${randomX}px`;
-      noBtn.style.top = `${randomY}px`;
-      
-      // If reached max clicks, hide NO button
-      if (noClickCount >= maxNoClicks) {
-        noBtn.style.display = 'none';
-      }
-      
-      // Create a few hearts on each NO click to add visual feedback
-      for (let i = 0; i < 3; i++) {
-        setTimeout(createHeart, i * 200);
-      }
-    });
+    // Initialize button position safely after load
+    // setInitialNoButtonPosition(); // Called by load listener
   </script>
 </body>
+
 </html>
