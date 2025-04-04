@@ -56,8 +56,7 @@
       border-radius: 2rem;
       cursor: pointer;
       font-family: inherit;
-      transition: all 0.3s ease;
-      /* Default transition */
+      /* Note: Transition for NO button is slightly different */
       box-shadow: 0 0.3rem 0.5rem rgba(0, 0, 0, 0.1);
     }
 
@@ -67,41 +66,44 @@
       transform-origin: center;
       z-index: 11;
       /* Ensure YES is above NO if they overlap slightly */
+      /* Add box-shadow to the transition for the glow effect */
+      transition: transform 0.3s ease, background-color 0.3s ease, box-shadow 0.4s ease-out;
+      /* Combined transitions */
+      /* Base shadow defined here */
+      box-shadow: 0 0.3rem 0.5rem rgba(0, 0, 0, 0.1);
     }
 
     #yesBtn:hover {
       background-color: #ff4081;
-      transform: scale(1.1);
-      /* Keep original YES hover */
+      /* Hover scale might be overridden by JS, but background change is good */
+      /* transform: scale(1.1); */
     }
 
     #noBtn {
       background-color: #b3b3b3;
       color: white;
       position: absolute;
-      /* Positioned relative to nearest positioned ancestor (body) */
-      /* Update transition: only include properties that change */
+      /* Positioned relative to the viewport */
+      /* Transition includes position and scale/transform */
       transition: transform 0.3s ease, background-color 0.3s ease, top 0.3s ease-out, left 0.3s ease-out;
       z-index: 10;
       /* Below YES button */
     }
 
     #noBtn:hover {
-      /* Keep a basic hover effect, but don't move it */
+      /* Basic hover, no movement */
       background-color: #999999;
-      /* Optional: slight scale up on hover */
-      /* transform: scale(1.05); */
     }
 
     /* Add Shake Animation */
     @keyframes shake {
 
+      /* Use CSS variable to respect current scale during shake */
       0%,
       100% {
         transform: translateX(0) rotate(0) scale(var(--current-scale, 1));
       }
 
-      /* Maintain scale */
       10%,
       30%,
       50%,
@@ -119,7 +121,7 @@
     }
 
     .shake-it {
-      /* Apply current scale via CSS variable during animation */
+      /* Apply animation using the current scale */
       animation: shake 0.4s ease-in-out;
     }
 
@@ -129,6 +131,10 @@
       animation: float 4s infinite;
       opacity: 0;
       z-index: 1;
+      user-select: none;
+      /* Prevent selecting hearts */
+      pointer-events: none;
+      /* Prevent interaction */
     }
 
     @keyframes float {
@@ -183,16 +189,17 @@
     const questionContainer = document.getElementById('questionContainer');
     const coupleImage = document.getElementById('coupleImage');
     const thankYouText = document.getElementById('thankYouText');
-    const body = document.body; // Get body for positioning context if needed
+    const body = document.body;
     let noClickCount = 0;
     const noMessages = [
       "NO", // Initial
       "Are you sure?",
-      "Really sure?",
+      "Really really sure?", // Slightly changed
       "Please don't :(",
       "Think again!",
+      "I'll be sad...", // Added variation
       "Pretty please?",
-      "Okay fine... maybe?", // Getting desperate
+      "Okay fine... just one more chance?", // Modified
       "Last chance!"
     ];
     const maxNoClicks = noMessages.length; // Button disappears after the last message
@@ -215,89 +222,106 @@
     }
     // Set initial position for NO button near YES
     function setInitialNoButtonPosition() {
-      // Ensure layout is calculated before getting rects
       requestAnimationFrame(() => {
-        if (!yesBtn || !noBtn) return; // Safety check if elements aren't ready
+        if (!yesBtn || !noBtn) return; // Safety check
         const yesBtnRect = yesBtn.getBoundingClientRect();
-        // Position relative to the viewport initially
-        // Place it a bit further to avoid accidental overlap on different screens
         const initialX = yesBtnRect.right + 30; // 30px right of YES
-        const initialY = yesBtnRect.top; // Align top with YES
-        // Prevent initial position from being off-screen
+        const initialY = yesBtnRect.top;
         const windowWidth = window.innerWidth;
-        const noBtnWidth = noBtn.offsetWidth || 100; // Estimate width if not rendered yet
-        noBtn.style.left = Math.min(initialX, windowWidth - noBtnWidth - 20) + 'px'; // Don't go off right edge
+        const noBtnWidth = noBtn.offsetWidth || 100; // Estimate width
+        noBtn.style.left = Math.min(initialX, windowWidth - noBtnWidth - 20) + 'px';
         noBtn.style.top = initialY + 'px';
-        noBtn.style.pointerEvents = 'auto'; // Ensure it's clickable
-        noBtn.style.transform = 'scale(1)'; // Reset scale explicitly
-        noBtn.style.setProperty('--current-scale', 1); // Reset CSS variable for shake
+        noBtn.style.pointerEvents = 'auto';
+        noBtn.style.transform = 'scale(1)'; // Reset scale
+        noBtn.style.setProperty('--current-scale', 1); // Reset CSS variable
+        noBtn.style.display = 'inline-block'; // Ensure visible if previously hidden
       });
     }
-    // Position the NO button initially
+    // Position the NO button initially and on resize
     window.addEventListener('load', setInitialNoButtonPosition);
-    window.addEventListener('resize', setInitialNoButtonPosition); // Reposition on resize
+    window.addEventListener('resize', setInitialNoButtonPosition);
     // Create hearts randomly
     function createHeart() {
       const heart = document.createElement('div');
       heart.classList.add('heart');
-      heart.innerHTML = ['💕', '💖', '💗', '💓', '💞'][Math.floor(Math.random() * 5)]; // Variety of hearts
+      heart.innerHTML = ['💕', '💖', '💗', '💓', '💞', '❤️'][Math.floor(Math.random() * 6)]; // More variety
       heart.style.left = Math.random() * 100 + 'vw';
       heart.style.fontSize = (Math.random() * 1 + 1) + 'rem'; // Random size
-      heart.style.animationDuration = (Math.random() * 3 + 3) + 's'; // Random speed
+      heart.style.animationDuration = (Math.random() * 3 + 4) + 's'; // Random speed (slightly slower avg)
       document.body.appendChild(heart);
       setTimeout(() => {
         heart.remove();
-      }, 6000); // Remove after animation finishes
+      }, 7000); // Adjusted lifespan to match animation duration + buffer
     }
     // Start creating hearts
-    setInterval(createHeart, 800); // Slightly less frequent
+    setInterval(createHeart, 700); // Slightly adjusted frequency
     // --- NO Button Logic ---
-    // REMOVED: noBtn.addEventListener('mouseenter', ...) logic
     // Handle NO button clicks
     noBtn.addEventListener('click', () => {
       noClickCount++;
+      // --- NO Button Effects ---
       // 1. Begging for Mercy: Change text
-      const messageIndex = Math.min(noClickCount, noMessages.length - 1);
+      // Index clamps at the last message before potential disappearance
+      const messageIndex = Math.min(noClickCount - 1, noMessages.length - 1); // Use noClickCount-1 for 0-based index
       noBtn.textContent = noMessages[messageIndex];
       // 2. Shrinking Escape: Make button smaller
-      const shrinkFactor = 1 - (noClickCount * 0.08); // Shrink by 8% each time
-      const scaleValue = Math.max(0.3, shrinkFactor); // Don't let it disappear completely via scale yet
+      const shrinkFactor = 1 - (noClickCount * 0.07); // Slightly less aggressive shrink
+      const scaleValue = Math.max(0.35, shrinkFactor); // Limit minimum size
       noBtn.style.transform = `scale(${scaleValue})`;
-      // Update CSS variable for shake animation to respect current scale
+      // Update CSS variable for shake animation
       noBtn.style.setProperty('--current-scale', scaleValue);
       // 3. Shaky Panic: Add shake animation class
-      // Remove first if it exists (e.g., rapid clicks) then add
       noBtn.classList.remove('shake-it');
-      // Force reflow/repaint might be needed for rapid clicks, but usually not
-      // void noBtn.offsetWidth;
+      void noBtn.offsetWidth; // Force reflow to help restart animation
       noBtn.classList.add('shake-it');
-      // Remove the class after the animation finishes
       setTimeout(() => {
-        // Check if button still exists before trying to remove class
-        if (noBtn) {
-          noBtn.classList.remove('shake-it');
-        }
+        if (noBtn) noBtn.classList.remove('shake-it');
       }, 400); // Match CSS animation duration
       // 4. Teleportation: Move immediately after click
       moveButtonRandomly(noBtn);
-      // 5. Make YES button bigger (more enticing!)
-      const yesScaleFactor = 1 + (noClickCount * 0.25); // Grows faster
-      // Prevent YES button getting excessively huge
-      yesBtn.style.transform = `scale(${Math.min(yesScaleFactor, 3)})`;
-      // 6. Hide NO button definitively after max clicks reached
-      if (noClickCount >= noMessages.length) { // Use length for comparison now
+      // --- YES Button Enhancement ---
+      // 5. Make YES button bigger
+      const yesScaleFactor = 1 + (noClickCount * 0.22); // Slightly less aggressive growth
+      yesBtn.style.transform = `scale(${Math.min(yesScaleFactor, 3.5)})`; // Limit max size
+      // 6. Add Shiny Glow Effect to YES button
+      const baseShadow = '0 0.3rem 0.5rem rgba(0, 0, 0, 0.1)'; // Keep the subtle base shadow
+      const glowIntensity = noClickCount * 4;
+      const glowSpread = noClickCount * 1.5;
+      const glowColor = `rgba(255, 255, 255, ${Math.min(0.9, 0.3 + noClickCount * 0.1)})`;
+      const secondaryGlowColor = `rgba(255, 192, 203, ${Math.min(0.7, 0.2 + noClickCount * 0.08)})`; // Pink glow
+      // Calculate capped blur/spread values
+      const finalGlowBlur = Math.min(45, 5 + glowIntensity); // Max blur slightly increased
+      const finalGlowSpread = Math.min(18, 1 + glowSpread); // Max spread slightly increased
+      const secondaryBlur = Math.min(25, 3 + glowIntensity / 2);
+      const secondarySpread = Math.min(10, glowSpread / 2);
+      // Combine base shadow with the new glow(s)
+      yesBtn.style.boxShadow = `${baseShadow}, 0 0 ${finalGlowBlur}px ${finalGlowSpread}px ${glowColor}, 0 0 ${secondaryBlur}px ${secondarySpread}px ${secondaryGlowColor}`;
+      // --- Final NO Click Handling ---
+      // 7. Hide NO button definitively after max clicks reached
+      if (noClickCount >= maxNoClicks) { // Check if clicks reached the limit
         noBtn.style.display = 'none';
-        // Optional: Make YES button maximum size now
-        yesBtn.style.transform = `scale(3)`; // Max size defined above
+        // Optional: Maximize YES button appearance when NO disappears
+        yesBtn.style.transform = `scale(3.5)`; // Max size defined above
+        // Calculate and apply max glow explicitly
+        const maxGlowCount = maxNoClicks; // Use max clicks for calculation
+        const maxGlowIntensity = maxGlowCount * 4;
+        const maxGlowSpread = maxGlowCount * 1.5;
+        const maxFinalGlowBlur = Math.min(45, 5 + maxGlowIntensity);
+        const maxFinalGlowSpread = Math.min(18, 1 + maxGlowSpread);
+        const maxSecondaryBlur = Math.min(25, 3 + maxGlowIntensity / 2);
+        const maxSecondarySpread = Math.min(10, maxGlowSpread / 2);
+        const maxGlowColor = `rgba(255, 255, 255, ${Math.min(0.9, 0.3 + maxGlowCount * 0.1)})`;
+        const maxSecondaryGlowColor = `rgba(255, 192, 203, ${Math.min(0.7, 0.2 + maxGlowCount * 0.08)})`;
+        yesBtn.style.boxShadow = `${baseShadow}, 0 0 ${maxFinalGlowBlur}px ${maxFinalGlowSpread}px ${maxGlowColor}, 0 0 ${maxSecondaryBlur}px ${maxSecondarySpread}px ${maxSecondaryGlowColor}`;
       }
       // Create a few hearts on each NO click for visual feedback
       for (let i = 0; i < 2; i++) {
-        setTimeout(createHeart, i * 150);
+        setTimeout(createHeart, i * 120); // Slightly faster spawn
       }
     });
     // --- YES Button Logic ---
     yesBtn.addEventListener('click', () => {
-      // Hide question container and NO button container/button
+      // Hide question container and NO button
       questionContainer.style.display = 'none';
       if (noBtn) noBtn.style.display = 'none'; // Ensure NO button is hidden
       // Show result image and text
@@ -306,12 +330,10 @@
       // Change background to a more celebratory gradient
       document.body.style.background = 'linear-gradient(135deg, #ffb6c1, #ffc0cb, #ffccd5)';
       // Create many hearts for celebration
-      for (let i = 0; i < 30; i++) { // More hearts on YES!
-        setTimeout(createHeart, i * 50); // Faster burst
+      for (let i = 0; i < 35; i++) { // Even more hearts on YES!
+        setTimeout(createHeart, i * 40); // Faster burst
       }
     });
-    // Initialize button position safely after load
-    // setInitialNoButtonPosition(); // Called by load listener
   </script>
 </body>
 
